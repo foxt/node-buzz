@@ -1,45 +1,37 @@
 const Buzz = require("./index.js")
 
-const buzz = new Buzz({
-    driver: "hidraw",
-    usbPath: "/dev/hidraw6"
-});
-buzz.device.on("data",function(array) {
-    var bitsPerByte = 8;
-var string = "";
 
-function repeat(str, num) {
-    if (str.length === 0 || num <= 1) {
-        if (num === 1) {
-            return str;
-        }
+// Initialize Buzz controller
+const buzz = new Buzz({});
 
-        return '';
-    }
+// Idle animation which turns on each LED in turn.
+var flashIndex = -1;
+var ls = [false,false,false,false]
+setInterval(function() { // PWM
+    buzz.light(ls)
+    buzz.light(lightState)
+},10)
 
-    var result = '',
-        pattern = str;
+setInterval(function() {
+    flashIndex += 1
+    ls = [false,false,false,false]
+    ls[flashIndex % 10] = true
+}, 100)
 
-    while (num > 0) {
-        if (num & 1) {
-            result += pattern;
-        }
 
-        num >>= 1;
-        pattern += pattern;
-    }
+// Light controllers with a button pressed down
+var lightState = [false,false,false,false]
 
-    return result;
-}
-
-function lpad(obj, str, num) {
-    return repeat(str, num - obj.length) + obj;
-}
-
-Array.prototype.forEach.call(array, function (element) {
-    string += lpad(element.toString(2), "0", bitsPerByte);
-});
-
-console.log(string);
+buzz.on("buttondown",function(event) {
+    console.log(`Button ${event.button} on controller ${event.controllerId} down`)
+    lightState[event.controllerId] = true
+    buzz.light(lightState)
 })
-console.log(buzz.device)
+buzz.on("buttonup",function(event) {
+    console.log(`Button ${event.button} on controller ${event.controllerId} up`)
+    lightState[event.controllerId] = false
+    buzz.light(lightState)
+})
+
+
+console.log("Ready! Press a button on any controller!")
